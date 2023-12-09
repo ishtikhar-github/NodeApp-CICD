@@ -1,40 +1,43 @@
-pipeline {
-    agent { label "dev-server"}
-    
-    stages {
-        
-        stage("code"){
+pipeline{
+    agent any
+    stages{
+        stage("Code Clone"){
             steps{
-                git url: "https://github.com/LondheShubham153/node-todo-cicd.git", branch: "master"
-                echo 'bhaiyya code clone ho gaya'
+                git url: "https://github.com/ishtikhar-github/NodeApp-CICD.git", branch: "master"
+                echo "code clone ho gaya"
             }
         }
-        stage("build and test"){
+        stage("Code Copy & Build"){
             steps{
-                sh "docker build -t node-app-test-new ."
-                echo 'code build bhi ho gaya'
+             sh "sudo cp -r . /home/ubuntu/nodeapp"
+             sh "docker build -t nodeapp-test ."
+             echo " Code Copied and Build"
             }
         }
-        stage("scan image"){
+        stage("Code Push"){
             steps{
-                echo 'image scanning ho gayi'
-            }
-        }
-        stage("push"){
-            steps{
-                withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
-                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker tag node-app-test-new:latest ${env.dockerHubUser}/node-app-test-new:latest"
-                sh "docker push ${env.dockerHubUser}/node-app-test-new:latest"
-                echo 'image push ho gaya'
+                    withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerpass",usernameVariable:"dockeruser")]){
+                    sh "docker login -u ${env.dockeruser} -p ${env.dockerpass}"
+                    sh "docker tag nodeapp-test:latest ${env.dockeruser}/nodeapp-test:latest"
+                    sh "docker push ${env.dockeruser}/nodeapp-test:latest"
+                    echo "image pushed done"
+                
                 }
             }
         }
-        stage("deploy"){
+         stage("deploy"){
             steps{
-                sh "docker-compose down && docker-compose up -d"
-                echo 'deployment ho gayi'
+                sh '''
+                sudo docker-compose -f /home/ubuntu/nodeapp/docker-compose.yaml down
+                sudo docker-compose -f /home/ubuntu/nodeapp/docker-compose.yaml up -d --build
+                '''
+                echo 'deployment done'
             }
+        }
+    }
+     post { 
+        success { 
+            echo 'your pipeline executed successfully'
         }
     }
 }
